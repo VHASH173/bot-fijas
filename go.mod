@@ -1,4 +1,4 @@
-module bot-fijas
+module github.com/VHASH173/bot-fijas
 
 go 1.26.5
 

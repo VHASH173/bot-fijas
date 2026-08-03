@@ -5,7 +5,7 @@ import (
 	"os" // Importamos OS para leer las variables de Railway
 	"time"
 
-	"bot-fijas/comandos" // Asegúrate de que coincida con el nombre de tu módulo
+	"github.com/VHASH173/bot-fijas/comandos" // Asegúrate de que coincida con el nombre de tu módulo
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
