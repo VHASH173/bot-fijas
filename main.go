@@ -23,15 +23,16 @@ type Perfil struct {
 var baseDeDatos = make(map[int64]*Perfil)
 
 func main() {
-	// Ahora el token se lee de las variables secretas de Railway
-	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
-	if botToken == "" {
+	// Leemos el token desde las variables de Railway
+	token := os.Getenv("TELEGRAM_BOT_TOKEN")
+	if token == "" {
 		log.Fatal("Falta la variable TELEGRAM_BOT_TOKEN en el servidor")
 	}
 
-	bot, err := tgbotapi.NewBotAPI(botToken)
+	// Iniciamos el bot con ese token
+	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
-		log.Panic(err)
+		log.Panic("Error al iniciar el bot: ", err)
 	}
 	bot.Debug = false
 	log.Printf("¡Bot encendido! Logueado como %s", bot.Self.UserName)
@@ -136,6 +137,26 @@ func main() {
 
 				if seCobroIntento {
 					usuario.ConsultasTotales++ // Aumentamos las totales solo si la IA le dio respuesta
+
+					// Ejemplo de uso para enviar un ticket como imagen en Telegram
+					datosTicket := comandos.DatosTicket{
+						Liga:       "Champions League",
+						Local:      "Real Madrid",
+						Visita:     "Man City",
+						Mercado:    "Ganador del partido",
+						Pronostico: "Real Madrid a ganar",
+						Cuota:      "2.85",
+						Stake:      "8",
+					}
+					htmlTicket, err := comandos.GenerarHTMLTicket(datosTicket)
+					if err == nil {
+						urlImagen, errImg := comandos.ConvertirHTMLaImagen(htmlTicket)
+						if errImg == nil && urlImagen != "" {
+							mensajeFoto := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(urlImagen))
+							mensajeFoto.Caption = "🔥 ¡NUEVA FIJA CONFIRMADA! 🔥\n\nRegístrate con nuestro código en Betano para seguir este pronóstico."
+							bot.Send(mensajeFoto)
+						}
+					}
 				}
 			} else if data == "btn_volver" {
 				caption, keyboard = comandos.GenerarMenuCmds("menu_principal")
