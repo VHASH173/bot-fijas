@@ -42,15 +42,14 @@ func GenerarPlanes() (string, tgbotapi.InlineKeyboardMarkup) {
 ➔ 90 días VIP | S/ 160
 ➔ 120 días VIP | S/ 200`
 
-	// Botonera 2x2 calcada de tu referencia
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("【💬】 GRUPO VIP", "https://t.me/TuGrupoAqui"),
-			tgbotapi.NewInlineKeyboardButtonURL("【♻️】 SOPORTE", "https://t.me/@LaRealFijaVIP"),
+			tgbotapi.NewInlineKeyboardButtonURL("【💬】 CANAL VIP", "https://t.me/LaRealFijaVIP"),
+			tgbotapi.NewInlineKeyboardButtonURL("【🛠️】 SOPORTE", "https://t.me/LaRealFijaVIP"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("【👑】 FUNDADOR", "https://t.me/@LaRealFijaVIP"),
-			tgbotapi.NewInlineKeyboardButtonURL("【🛒】 COMPRAR", "https://t.me/@LaRealFijaVIP"), // Link directo a ti para cerrar la venta
+			tgbotapi.NewInlineKeyboardButtonURL("【👑】 FUNDADOR", "https://t.me/LaRealFijaVIP"),
+			tgbotapi.NewInlineKeyboardButtonURL("【🛒】 COMPRAR", "https://t.me/LaRealFijaVIP"),
 		),
 	)
 

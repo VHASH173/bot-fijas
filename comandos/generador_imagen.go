@@ -1,25 +1,25 @@
 package comandos
 
 import (
-    "bytes"
-    "encoding/json"
-    "fmt"
-    "io"
-    "net/http"
-    "os"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
 )
 
 // Estructura de los datos que van al ticket
 type DatosTicket struct {
-    Partido    string
-    Mercado    string
-    Pronostico string
-    Cuota      string
+	Partido    string
+	Mercado    string
+	Pronostico string
+	Cuota      string
 }
 
 // Genera el HTML inyectando los datos y forzando un fondo blanco/dimensiones
 func GenerarHTMLTicket(datos DatosTicket) string {
-    return fmt.Sprintf(`
+	return fmt.Sprintf(`
     <html>
     <head>
         <style>
@@ -54,32 +54,32 @@ func GenerarHTMLTicket(datos DatosTicket) string {
 
 // Se conecta a la API de HCTI y devuelve la URL de la imagen
 func ConvertirHTMLaImagen(htmlContent string) (string, error) {
-    apiID := os.Getenv("HCTI_USER_ID")
-    apiKey := os.Getenv("HCTI_API_KEY")
+	apiID := os.Getenv("HCTI_USER_ID")
+	apiKey := os.Getenv("HCTI_API_KEY")
 
-    data := map[string]string{"html": htmlContent}
-    jsonData, _ := json.Marshal(data)
+	data := map[string]string{"html": htmlContent}
+	jsonData, _ := json.Marshal(data)
 
-    req, err := http.NewRequest("POST", "https://hcti.io/v1/image", bytes.NewBuffer(jsonData))
-    if err != nil {
-        return "", err
-    }
-    req.SetBasicAuth(apiID, apiKey)
-    req.Header.Set("Content-Type", "application/json")
+	req, err := http.NewRequest("POST", "https://hcti.io/v1/image", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+	req.SetBasicAuth(apiID, apiKey)
+	req.Header.Set("Content-Type", "application/json")
 
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        return "", err
-    }
-    defer resp.Body.Close()
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
 
-    body, _ := io.ReadAll(resp.Body)
-    var result map[string]interface{}
-    json.Unmarshal(body, &result)
+	body, _ := io.ReadAll(resp.Body)
+	var result map[string]interface{}
+	json.Unmarshal(body, &result)
 
-    if url, ok := result["url"].(string); ok {
-        return url, nil
-    }
-    return "", fmt.Errorf("no se pudo generar la imagen: %s", string(body))
+	if url, ok := result["url"].(string); ok {
+		return url, nil
+	}
+	return "", fmt.Errorf("no se pudo generar la imagen: %s", string(body))
 }

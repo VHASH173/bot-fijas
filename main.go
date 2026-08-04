@@ -13,11 +13,15 @@ import (
 const ImagePath = "image.png" // Tu foto (asegúrate de que sea cuadrada 1:1)
 
 type Perfil struct {
-	FechaRegistro    time.Time
-	ConsultasTotales int
-	ConsultasHoy     int
-	UltimaConsulta   time.Time // Controla el spam de 2 minutos
-	EsVIP            bool      // Controla si tiene límite de 3 o es ilimitado
+	FechaRegistro       time.Time
+	ConsultasTotales    int
+	ConsultasHoy        int
+	UltimaConsulta      time.Time // Controla el spam de 2 minutos
+	EsVIP               bool      // Controla si tiene límite de 3 o es ilimitado
+	Rol                 string
+	Plan                string
+	Creditos            int
+	FechaVencimientoVIP time.Time
 }
 
 var baseDeDatos = make(map[int64]*Perfil)
@@ -94,7 +98,9 @@ func main() {
 
 			case "me":
 				usuario.ConsultasTotales++
-				msg.Caption = "Perfil de usuario"
+				caption, keyboard := comandos.GenerarMe(tUser, usuario.FechaRegistro, usuario.Rol, usuario.Plan, usuario.Creditos, usuario.EsVIP, usuario.FechaVencimientoVIP, usuario.ConsultasTotales, usuario.ConsultasHoy, bot.Self.UserName)
+				msg.Caption = caption
+				msg.ReplyMarkup = keyboard
 				bot.Send(msg)
 
 			case "cmds":
@@ -133,25 +139,10 @@ func main() {
 			// AQUI CONECTAMOS LOS NUEVOS BOTONES DE LA IA
 			if data == "ia_1x2" || data == "ia_goles" || data == "ia_btts" {
 				var seCobroIntento bool
-				caption, keyboard, seCobroIntento, usuario.ConsultasHoy, usuario.UltimaConsulta = comandos.GenerarPronosticoIA(usuario.ConsultasHoy, usuario.UltimaConsulta, usuario.EsVIP, data)
+				caption, keyboard, _, seCobroIntento, _, usuario.ConsultasHoy, usuario.UltimaConsulta = comandos.GenerarPronosticoIA(usuario.ConsultasHoy, usuario.UltimaConsulta, usuario.EsVIP, data)
 
 				if seCobroIntento {
 					usuario.ConsultasTotales++ // Aumentamos las totales solo si la IA le dio respuesta
-
-					// Ejemplo de uso para enviar un ticket como imagen en Telegram
-					datosTicket := comandos.DatosTicket{
-						Partido:    "Real Madrid vs Man City",
-						Mercado:    "Ganador del partido",
-						Pronostico: "Real Madrid a ganar",
-						Cuota:      "2.85",
-					}
-					htmlTicket := comandos.GenerarHTMLTicket(datosTicket)
-					urlImagen, errImg := comandos.ConvertirHTMLaImagen(htmlTicket)
-					if errImg == nil && urlImagen != "" {
-						mensajeFoto := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(urlImagen))
-						mensajeFoto.Caption = "🔥 ¡NUEVA FIJA CONFIRMADA! 🔥\n\nRegístrate con nuestro código en Betano para seguir este pronóstico."
-						bot.Send(mensajeFoto)
-					}
 				}
 			} else if data == "btn_volver" {
 				caption, keyboard = comandos.GenerarMenuCmds("menu_principal")

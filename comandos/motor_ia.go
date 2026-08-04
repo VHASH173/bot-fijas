@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -37,7 +38,44 @@ type Outcome struct {
 	Price float64 `json:"price"`
 }
 
-func GenerarPronosticoIA(consultasHoy int, ultimaConsulta time.Time, esVIP bool, mercado string) (string, tgbotapi.InlineKeyboardMarkup, bool, int, time.Time) {
+func construirDatosTicket(liga, local, visita, mercado, pronostico string) DatosTicket {
+	partido := "Partido en análisis"
+	local = strings.TrimSpace(local)
+	visita = strings.TrimSpace(visita)
+	if local != "" || visita != "" {
+		partido = fmt.Sprintf("%s vs %s", local, visita)
+	}
+
+	mercadoTexto := strings.TrimSpace(mercado)
+	if mercadoTexto == "" {
+		mercadoTexto = "Mercado principal"
+	}
+
+	pronosticoTexto := strings.TrimSpace(pronostico)
+	if pronosticoTexto == "" {
+		pronosticoTexto = "Pronóstico en análisis"
+	}
+
+	return DatosTicket{
+		Partido:    partido,
+		Mercado:    mercadoTexto,
+		Pronostico: pronosticoTexto,
+		Cuota:      "Sin datos",
+	}
+}
+
+func respuestaIAValida(respuesta string) bool {
+	texto := strings.TrimSpace(strings.ToLower(respuesta))
+	if texto == "" {
+		return false
+	}
+	if strings.Contains(texto, "error") || strings.Contains(texto, "sobrecargada") || strings.Contains(texto, "intenta") || strings.Contains(texto, "no tengo") {
+		return false
+	}
+	return true
+}
+
+func GenerarPronosticoIA(consultasHoy int, ultimaConsulta time.Time, esVIP bool, mercado string) (string, tgbotapi.InlineKeyboardMarkup, DatosTicket, bool, bool, int, time.Time) {
 
 	oddsAPIKey := os.Getenv("ODDS_API_KEY")
 	geminiKey := os.Getenv("GEMINI_API_KEY")
@@ -47,7 +85,7 @@ func GenerarPronosticoIA(consultasHoy int, ultimaConsulta time.Time, esVIP bool,
 		teclado := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("【 🏠 VOLVER 】", "btn_volver")),
 		)
-		return "⚠️ No tengo configuradas las claves de IA y apuestas. Activa las variables de entorno.", teclado, false, consultasHoy, ultimaConsulta
+		return "⚠️ No tengo configuradas las claves de IA y apuestas. Activa las variables de entorno.", teclado, DatosTicket{}, false, false, consultasHoy, ultimaConsulta
 	}
 
 	// 1. FILTRO ANTI-SPAM (2 Minutos)
@@ -59,7 +97,7 @@ func GenerarPronosticoIA(consultasHoy int, ultimaConsulta time.Time, esVIP bool,
 
 		textoSpam := fmt.Sprintf("⏳ <b>¡Epa, tranquilo máquina!</b>\n\nEl algoritmo está procesando datos. Debes esperar <b>%d min y %d seg</b> para solicitar otra fija.", minutos, segundos)
 		teclado := tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("【 🏠 VOLVER 】", "btn_volver")))
-		return textoSpam, teclado, false, consultasHoy, ultimaConsulta
+		return textoSpam, teclado, DatosTicket{}, false, false, consultasHoy, ultimaConsulta
 	}
 
 	// 2. LÍMITE FREEMIUM (Max 3 al día)
@@ -74,7 +112,7 @@ Has consumido tus 3 fijas gratuitas de hoy. La IA ha detectado oportunidades de 
 			tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("【💳】 VER PLANES VIP", "btn_planes")),
 			tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("【 🏠 VOLVER 】", "btn_volver")),
 		)
-		return textoLimite, tecladoVIP, false, consultasHoy, ultimaConsulta
+		return textoLimite, tecladoVIP, DatosTicket{}, false, false, consultasHoy, ultimaConsulta
 	}
 
 	// 3. OBTENER PARTIDO REAL Y CUOTAS (The Odds API)
@@ -82,11 +120,11 @@ Has consumido tus 3 fijas gratuitas de hoy. La IA ha detectado oportunidades de 
 	url := fmt.Sprintf("https://api.the-odds-api.com/v4/sports/upcoming/odds/?apiKey=%s&regions=eu&markets=h2h", oddsAPIKey)
 	respOdds, errOdds := http.Get(url)
 
-	var liga, local, visita, infoCuotas string
+	var liga, local, visita, infoCuotas, bookmaker string
 
 	if errOdds != nil || respOdds.StatusCode != 200 {
 		log.Println("Error conectando a The Odds API")
-		liga, local, visita, infoCuotas = "Fútbol Global", "Equipo A", "Equipo B", "Cuotas no disponibles momentáneamente"
+		liga, local, visita, infoCuotas, bookmaker = "Fútbol Global", "Equipo A", "Equipo B", "Cuotas no disponibles momentáneamente", "Sin datos"
 	} else {
 		defer respOdds.Body.Close()
 		var eventos []EventoDeportivo
@@ -97,6 +135,10 @@ Has consumido tus 3 fijas gratuitas de hoy. La IA ha detectado oportunidades de 
 			liga = evento.SportTitle
 			local = evento.HomeTeam
 			visita = evento.AwayTeam
+
+			if len(evento.Bookmakers) > 0 {
+				bookmaker = evento.Bookmakers[0].Title
+			}
 
 			// Extraemos las cuotas si el bookmaker las liberó
 			if len(evento.Bookmakers) > 0 && len(evento.Bookmakers[0].Markets) > 0 {
@@ -124,20 +166,28 @@ Has consumido tus 3 fijas gratuitas de hoy. La IA ha detectado oportunidades de 
 		model := client.GenerativeModel("gemini-1.5-flash")
 
 		// El "Prompt" maestro que mezcla la IA con los datos reales
-		prompt := fmt.Sprintf(`Eres un tipster profesional de apuestas deportivas muy agresivo y persuasivo. 
-Tengo este partido REAL a punto de jugarse:
+		prompt := fmt.Sprintf(`Eres un analista de apuestas. Responde solo con este formato exacto en Markdown, sin saludos, sin introducciones, sin despedidas:
+
+🔥 **APUESTA CONFIRMADA** 🔥
+⚽ **Partido:** [Equipo A vs Equipo B]
+🎯 **Mercado:** [Ej: Ganador del partido / Más de 2.5 goles]
+📊 **Pronóstico:** [El pick exacto]
+📈 **Cuota:** [Ej: 1.85]
+🏦 **Casa de Apuestas:** [Ej: Betano, Bet365, 1xBet]
+💰 **Stake Recomendado:** [Ej: Stake 1.5 o Monto sugerido]
+
+Usa estos datos:
 Liga: %s
 Partido: %s vs %s
+Bookmaker: %s
 Cuotas Actuales: %s
-
-El usuario está buscando un pronóstico para el mercado: %s.
-Basado en las cuotas, genera un pronóstico de máximo 4 líneas. Sé muy seguro de ti mismo, usa un lenguaje de "fija" o "verde seguro", añade emojis de dinero o fuego y recomienda un stake del 1 al 10. No pongas asteriscos ni formato markdown extra, solo el texto limpio.`, liga, local, visita, infoCuotas, mercado)
+Mercado: %s`, liga, local, visita, bookmaker, infoCuotas, mercado)
 
 		resp, err := model.GenerateContent(ctx, genai.Text(prompt))
 
 		if err != nil {
 			log.Println("Error generando contenido:", err)
-			respuestaIA = "⚠️ La IA está sobrecargada analizando métricas de este partido. Intenta en unos minutos."
+			respuestaIA = "⚠️ La IA está analizando demasiadas métricas. Intenta en unos minutos."
 		} else {
 			for _, cand := range resp.Candidates {
 				if cand.Content != nil {
@@ -145,6 +195,9 @@ Basado en las cuotas, genera un pronóstico de máximo 4 líneas. Sé muy seguro
 						respuestaIA = fmt.Sprintf("%v", part)
 					}
 				}
+			}
+			if !respuestaIAValida(respuestaIA) {
+				respuestaIA = "⚠️ La IA está analizando demasiadas métricas. Intenta en unos minutos."
 			}
 		}
 	}
@@ -155,14 +208,23 @@ Basado en las cuotas, genera un pronóstico de máximo 4 líneas. Sé muy seguro
 🏆 <b>Competición:</b> %s
 ⚽ <b>Encuentro:</b> %s vs %s
 🎯 <b>Mercado analizado:</b> %s
+🏦 <b>Bookmaker:</b> %s
+📊 <b>Cuotas:</b> %s
 
 <b>[🔥] PRONÓSTICO DEL SISTEMA:</b>
 %s
 
-<i>⚠️ Invierte con cabeza. Las cuotas varían según tu casa de apuestas.</i>`, liga, local, visita, mercado, respuestaIA)
+<i>⚠️ Invierte con cabeza. Las cuotas varían según tu casa de apuestas.</i>`, liga, local, visita, mercado, bookmaker, infoCuotas, respuestaIA)
 
 	teclado := tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("【 🏠 VOLVER AL MENÚ 】", "btn_volver")))
 
+	debeEnviarImagen := respuestaIAValida(respuestaIA)
+	if !debeEnviarImagen {
+		log.Println("Se omite la imagen porque la respuesta de IA no fue válida")
+	}
+
+	ticket := construirDatosTicket(liga, local, visita, mercado, respuestaIA)
+
 	// Todo salió bien, cobramos el intento y actualizamos la hora
-	return textoExito, teclado, true, consultasHoy + 1, time.Now()
+	return textoExito, teclado, ticket, true, debeEnviarImagen, consultasHoy + 1, time.Now()
 }

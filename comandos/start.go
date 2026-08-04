@@ -40,15 +40,14 @@ Un motor diseñado para reventar a las casas de apuestas con precisión y rentab
 %s
 <i>[ 📍 ] Servicio administrado por EL FUNDADOR</i>`, mencion, linea, fechaActual, linea, linea, linea)
 
-	// Botones en cuadrícula 2x2 (igual que en tu captura de referencia)
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("【💬】 CANAL VIP", "https://t.me/TuGrupoAqui"),
-			tgbotapi.NewInlineKeyboardButtonURL("【♻️】 SOPORTE", "https://t.me/TuSoporteAqui"),
+			tgbotapi.NewInlineKeyboardButtonURL("【💬】 CANAL VIP", "https://t.me/LaRealFijaVIP"),
+			tgbotapi.NewInlineKeyboardButtonURL("【🛠️】 SOPORTE", "https://t.me/LaRealFijaVIP"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("【👑】 FUNDADOR", "https://t.me/TuUsuarioAqui"),
-			tgbotapi.NewInlineKeyboardButtonURL("【📊】 RESULTADOS", "https://t.me/TuCanalResultados"),
+			tgbotapi.NewInlineKeyboardButtonURL("【👑】 FUNDADOR", "https://t.me/LaRealFijaVIP"),
+			tgbotapi.NewInlineKeyboardButtonURL("【📈】 RESULTADOS", "https://t.me/LaRealFijaVIP"),
 		),
 	)
 
