@@ -25,6 +25,8 @@ Selecciona qué tipo de fija estás buscando hoy:`
 			),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("【🥅】 GOLES (O/U)", "ia_goles"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("【🔥】 AMBOS ANOTAN", "ia_btts"),
 			),
 			botonVolver,
@@ -80,10 +82,14 @@ Selecciona qué tipo de fija estás buscando hoy:`
 		keyboard = tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("【⚽】 SOLTAR FIJA", "btn_fija"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("【💎】 ZONA VIP", "btn_vip"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("【📊】 ESTADÍSTICAS", "btn_stats"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("【💳】 PLANES VIP", "btn_planes"),
 			),
 		)

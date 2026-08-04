@@ -140,22 +140,17 @@ func main() {
 
 					// Ejemplo de uso para enviar un ticket como imagen en Telegram
 					datosTicket := comandos.DatosTicket{
-						Liga:       "Champions League",
-						Local:      "Real Madrid",
-						Visita:     "Man City",
+						Partido:    "Real Madrid vs Man City",
 						Mercado:    "Ganador del partido",
 						Pronostico: "Real Madrid a ganar",
 						Cuota:      "2.85",
-						Stake:      "8",
 					}
-					htmlTicket, err := comandos.GenerarHTMLTicket(datosTicket)
-					if err == nil {
-						urlImagen, errImg := comandos.ConvertirHTMLaImagen(htmlTicket)
-						if errImg == nil && urlImagen != "" {
-							mensajeFoto := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(urlImagen))
-							mensajeFoto.Caption = "🔥 ¡NUEVA FIJA CONFIRMADA! 🔥\n\nRegístrate con nuestro código en Betano para seguir este pronóstico."
-							bot.Send(mensajeFoto)
-						}
+					htmlTicket := comandos.GenerarHTMLTicket(datosTicket)
+					urlImagen, errImg := comandos.ConvertirHTMLaImagen(htmlTicket)
+					if errImg == nil && urlImagen != "" {
+						mensajeFoto := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(urlImagen))
+						mensajeFoto.Caption = "🔥 ¡NUEVA FIJA CONFIRMADA! 🔥\n\nRegístrate con nuestro código en Betano para seguir este pronóstico."
+						bot.Send(mensajeFoto)
 					}
 				}
 			} else if data == "btn_volver" {

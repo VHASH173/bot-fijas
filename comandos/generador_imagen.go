@@ -1,90 +1,85 @@
 package comandos
 
 import (
-	"bytes"
-	"encoding/json"
-	"html/template"
-	"io"
-	"log"
-	"net/http"
-	"net/url"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strings"
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+    "os"
 )
 
-// DatosTicket almacena la info que inyectaremos en el HTML
+// Estructura de los datos que van al ticket
 type DatosTicket struct {
-	Liga       string
-	Local      string
-	Visita     string
-	Mercado    string
-	Pronostico string
-	Cuota      string
-	Stake      string
+    Partido    string
+    Mercado    string
+    Pronostico string
+    Cuota      string
 }
 
-// Estructura para leer la respuesta de la API HCTI
-type HCTIResponse struct {
-	URL string `json:"url"`
+// Genera el HTML inyectando los datos y forzando un fondo blanco/dimensiones
+func GenerarHTMLTicket(datos DatosTicket) string {
+    return fmt.Sprintf(`
+    <html>
+    <head>
+        <style>
+            body { 
+                background-color: #1a1a1a; 
+                color: white; 
+                font-family: Arial, sans-serif; 
+                width: 400px; /* Evita el fondo negro gigante */
+                height: 250px; 
+                margin: 0; 
+                padding: 20px; 
+                box-sizing: border-box;
+                border: 2px solid #00ff88;
+                border-radius: 10px;
+            }
+            .titulo { color: #00ff88; font-weight: bold; text-align: center; font-size: 20px; }
+            .detalle { margin-top: 15px; font-size: 16px; }
+            .cuota { color: #00ff88; font-weight: bold; font-size: 18px; }
+        </style>
+    </head>
+    <body>
+        <div class="titulo">🔥 APUESTA CONFIRMADA 🔥</div>
+        <div class="detalle">
+            <p><strong>Partido:</strong> %s</p>
+            <p><strong>Mercado:</strong> %s</p>
+            <p><strong>Pronóstico:</strong> %s</p>
+            <p><strong>Cuota:</strong> <span class="cuota">%s</span></p>
+        </div>
+    </body>
+    </html>`, datos.Partido, datos.Mercado, datos.Pronostico, datos.Cuota)
 }
 
-// GenerarHTMLTicket toma los datos y los mete en la plantilla HTML
-func GenerarHTMLTicket(datos DatosTicket) (string, error) {
-	templatePath := filepath.Join("plantillas", "ticket.html")
-	if _, err := os.Stat(templatePath); err != nil {
-		_, currentFile, _, _ := runtime.Caller(0)
-		templatePath = filepath.Join(filepath.Dir(currentFile), "..", "plantillas", "ticket.html")
-	}
+// Se conecta a la API de HCTI y devuelve la URL de la imagen
+func ConvertirHTMLaImagen(htmlContent string) (string, error) {
+    apiID := os.Getenv("HCTI_USER_ID")
+    apiKey := os.Getenv("HCTI_API_KEY")
 
-	tmpl, err := template.ParseFiles(templatePath)
-	if err != nil {
-		log.Println("Error leyendo la plantilla:", err)
-		return "", err
-	}
+    data := map[string]string{"html": htmlContent}
+    jsonData, _ := json.Marshal(data)
 
-	var htmlProcesado bytes.Buffer
-	err = tmpl.Execute(&htmlProcesado, datos)
-	if err != nil {
-		log.Println("Error inyectando datos en la plantilla:", err)
-		return "", err
-	}
+    req, err := http.NewRequest("POST", "https://hcti.io/v1/image", bytes.NewBuffer(jsonData))
+    if err != nil {
+        return "", err
+    }
+    req.SetBasicAuth(apiID, apiKey)
+    req.Header.Set("Content-Type", "application/json")
 
-	return htmlProcesado.String(), nil
-}
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        return "", err
+    }
+    defer resp.Body.Close()
 
-// ConvertirHTMLaImagen envía el HTML a la API y devuelve la URL pública de la imagen
-func ConvertirHTMLaImagen(html string) (string, error) {
-	apiUserID := os.Getenv("HCTI_USER_ID")
-	apiKey := os.Getenv("HCTI_API_KEY")
+    body, _ := io.ReadAll(resp.Body)
+    var result map[string]interface{}
+    json.Unmarshal(body, &result)
 
-	// Preparamos los datos para enviarlos por POST
-	data := url.Values{}
-	data.Set("html", html)
-
-	req, err := http.NewRequest("POST", "https://hcti.io/v1/image", strings.NewReader(data.Encode()))
-	if err != nil {
-		return "", err
-	}
-
-	// Autenticación básica requerida por la API
-	req.SetBasicAuth(apiUserID, apiKey)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	// Ejecutamos la petición
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	body, _ := io.ReadAll(resp.Body)
-
-	// Decodificamos el JSON para extraer la URL de la imagen creada
-	var hctiResp HCTIResponse
-	json.Unmarshal(body, &hctiResp)
-
-	return hctiResp.URL, nil
+    if url, ok := result["url"].(string); ok {
+        return url, nil
+    }
+    return "", fmt.Errorf("no se pudo generar la imagen: %s", string(body))
 }
