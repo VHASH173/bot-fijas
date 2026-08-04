@@ -77,6 +77,42 @@ Selecciona qué tipo de fija estás buscando hoy:`
 <i>Contacta al administrador para los métodos de pago.</i>`
 		keyboard = tgbotapi.NewInlineKeyboardMarkup(botonVolver)
 
+	case "cmd_referidos":
+		caption = `<b>【 #KING DATA 】 ➤ SISTEMA DE REFERIDOS</b>
+
+<b>USUARIO</b> ➤ El Dorado 👑
+
+<b>ESTADÍSTICAS GENERALES</b>
+• Total invitados: 0
+• Ganancias: 0 créditos
+
+<b>LISTA DE REGISTROS</b>
+No hay registros disponibles.
+
+<b>ENLACE DE INVITACIÓN</b>
+https://t.me/KingDataX_bot?start=7010388601`
+		keyboard = tgbotapi.NewInlineKeyboardMarkup(botonVolver)
+
+	case "cmd_compras":
+		caption = `<b>【 #KING DATA 】 ➤ HISTORIAL DE COMPRAS</b>
+
+No tienes registros de compras o activaciones.`
+		keyboard = tgbotapi.NewInlineKeyboardMarkup(botonVolver)
+
+	case "cmd_historial_fijas":
+		caption = `<b>【 #KING DATA 】 ➤ HISTORIAL VACIÓ</b>
+
+⚠️ No hay consultas registradas para este usuario.`
+		keyboard = tgbotapi.NewInlineKeyboardMarkup(botonVolver)
+
+	case "cmd_suscripcion":
+		caption = `<b>【 #KING DATA 】 ➤ SUSCRIPCIÓN</b>
+
+Tu suscripción actual es gratuita.
+
+Actualiza a VIP para obtener acceso completo a todas las fijas y beneficios.`
+		keyboard = tgbotapi.NewInlineKeyboardMarkup(botonVolver)
+
 	default: // Menú Principal
 		caption = "<b>[BOT DE LAS JIJAS]</b> → <i>Menú Principal</i>\n\nSelecciona una categoría de apuestas:"
 		keyboard = tgbotapi.NewInlineKeyboardMarkup(

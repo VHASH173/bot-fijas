@@ -61,9 +61,10 @@ func GenerarMe(user *tgbotapi.User, fechaRegistro time.Time, rol, plan string, c
 https://t.me/%s?start=%d`, user.ID, fullName, username, fechaRegistroTexto, rol, plan, diasRestantes, creditos, fechaVencimientoTexto, consultasTotales, consultasHoy, botUsername, user.ID)
 
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("👥 REFERIDOS", "cmd_referidos")),
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("🛒 HISTORIAL COMPRAS", "cmd_compras")),
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("📜 HISTORIAL APUESTAS", "cmd_historial")),
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("� HISTORIAL FIJAS", "cmd_historial_fijas")),
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("👥 REFERIDO", "cmd_referidos")),
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("🛒 COMPRAS", "cmd_compras")),
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("💳 SUSCRIPCIÓN", "cmd_suscripcion")),
 	)
 
 	return caption, keyboard
