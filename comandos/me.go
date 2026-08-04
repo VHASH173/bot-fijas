@@ -8,7 +8,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func GenerarMe(user *tgbotapi.User, fechaRegistro time.Time, rol, plan string, creditos int, esVIP bool, fechaVencimientoVIP time.Time, consultasTotales int, consultasHoy int, botUsername string) (string, tgbotapi.InlineKeyboardMarkup) {
+func GenerarMe(user *tgbotapi.User, fechaRegistro time.Time, rol, plan string, creditos int, esVIP bool, fechaVencimientoVIP time.Time, consultasTotales int, consultasHoy int, botUsername string) string {
 	fullName := strings.TrimSpace(fmt.Sprintf("%s %s", user.FirstName, user.LastName))
 	if fullName == "" {
 		fullName = "No disponible"
@@ -24,14 +24,24 @@ func GenerarMe(user *tgbotapi.User, fechaRegistro time.Time, rol, plan string, c
 		fechaRegistroTexto = "N/D"
 	}
 
-	diasRestantes := "N/A"
+	rolUsuario := rol
+	if rolUsuario == "" {
+		rolUsuario = "Free"
+	}
+
+	planActual := plan
+	if planActual == "" {
+		planActual = "GRATIS"
+	}
+
+	diasRestantes := "0"
 	fechaVencimientoTexto := "N/A"
 	if esVIP {
 		dias := int(time.Until(fechaVencimientoVIP).Hours() / 24)
 		if dias < 0 {
 			dias = 0
 		}
-		diasRestantes = fmt.Sprintf("%d DÍAS", dias)
+		diasRestantes = fmt.Sprintf("%d", dias)
 		fechaVencimientoTexto = fechaVencimientoVIP.Format("02/01/2006")
 	}
 
@@ -58,14 +68,12 @@ func GenerarMe(user *tgbotapi.User, fechaRegistro time.Time, rol, plan string, c
 「⏱️」 • ANTI-SPAM ➣ 0 seg.
 
 🔗 <b>ENLACE DE REFERIDO</b>
-https://t.me/%s?start=%d`, user.ID, fullName, username, fechaRegistroTexto, rol, plan, diasRestantes, creditos, fechaVencimientoTexto, consultasTotales, consultasHoy, botUsername, user.ID)
+https://t.me/%s?start=%d
 
-	keyboard := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("� HISTORIAL FIJAS", "cmd_historial_fijas")),
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("👥 REFERIDO", "cmd_referidos")),
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("🛒 COMPRAS", "cmd_compras")),
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("💳 SUSCRIPCIÓN", "cmd_suscripcion")),
-	)
+📌 <b>MENÚ DE OPCIONES</b>
+「👥」 • REFERIDOS ➣ /referidos
+「🛒」 • COMPRAS ➣ /compras
+「📜」 • HISTORIAL ➣ /historial`, user.ID, fullName, username, fechaRegistroTexto, rolUsuario, planActual, diasRestantes, creditos, fechaVencimientoTexto, consultasTotales, consultasHoy, botUsername, user.ID)
 
-	return caption, keyboard
+	return caption
 }

@@ -98,9 +98,8 @@ func main() {
 
 			case "me":
 				usuario.ConsultasTotales++
-				caption, keyboard := comandos.GenerarMe(tUser, usuario.FechaRegistro, usuario.Rol, usuario.Plan, usuario.Creditos, usuario.EsVIP, usuario.FechaVencimientoVIP, usuario.ConsultasTotales, usuario.ConsultasHoy, bot.Self.UserName)
+				caption := comandos.GenerarMe(tUser, usuario.FechaRegistro, usuario.Rol, usuario.Plan, usuario.Creditos, usuario.EsVIP, usuario.FechaVencimientoVIP, usuario.ConsultasTotales, usuario.ConsultasHoy, bot.Self.UserName)
 				msg.Caption = caption
-				msg.ReplyMarkup = keyboard
 				bot.Send(msg)
 
 			case "cmds":
